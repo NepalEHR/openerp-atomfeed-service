@@ -6,3 +6,7 @@ logs
 *.ipr
 *.iws
 .DS_Store
+.project
+*.settings
+*.classpath
+*.project
