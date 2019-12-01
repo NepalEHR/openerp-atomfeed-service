@@ -78,6 +78,7 @@ public class OpenMRSBedAssignment extends OpenMRSEncounterEvent {
 		openERPOrder.setQuantityUnits("Day(s)");
 		openERPOrder.setEncounterId(encounter.getUuid());
 		openERPOrder.setVisitId(encounter.getVisit().getUuid());
+		
 		openERPOrder.setVisitType(encounter.getVisit().getVisitType().getName());
 		openERPOrder.setType(BED_TYPE_ORDER);
 		openERPOrder.setAction(ACTION_TYPE_NEW);
