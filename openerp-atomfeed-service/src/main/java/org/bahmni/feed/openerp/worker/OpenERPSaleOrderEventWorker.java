@@ -3,7 +3,6 @@ package org.bahmni.feed.openerp.worker;
 import java.io.IOException;
 import java.net.URI;
 
-import org.apache.log4j.Logger;
 import org.bahmni.feed.openerp.ObjectMapperRepository;
 import org.bahmni.feed.openerp.OpenMRSBedAssignmentParser;
 import org.bahmni.feed.openerp.client.OpenMRSWebClient;
@@ -26,8 +25,6 @@ public class OpenERPSaleOrderEventWorker implements EventWorker {
     private ProductService productService;
     public static final String BED_EVENT_TITLE = "Bed-Assignment";
 
-    private static Logger logger = Logger.getLogger(OpenERPSaleOrderEventWorker.class);
-
     public OpenERPSaleOrderEventWorker(String feedUrl, OpenERPClient openERPClient, OpenMRSWebClient webClient, String urlPrefix) {
         this.feedUrl = feedUrl;
         this.openERPClient = openERPClient;
@@ -38,9 +35,6 @@ public class OpenERPSaleOrderEventWorker implements EventWorker {
 
     @Override
     public void process(Event event) {
-    	System.out.println("Inside process event of sales order \n\n\n\n\n");
-    	System.out.println("event titke=>"+event.getTitle());
-    	
         try {
         	OpenERPRequest openERPRequest = BED_EVENT_TITLE.equals(event.getTitle()) ? mapBedAssignmentRequest(event) : mapRequest(event);
             if (!openERPRequest.shouldERPConsumeEvent())
@@ -57,12 +51,10 @@ public class OpenERPSaleOrderEventWorker implements EventWorker {
     }
     
     private OpenERPRequest mapBedAssignmentRequest(Event event) throws IOException {
-    	logger.error("\n\n\n\n\nInside mapBedAssignmentRequest \n\n\n\n\n");
         String encounterEventContent = webClient.get(URI.create(urlPrefix + event.getContent()));
         OpenMRSBedAssignmentParser openMRSBedAssignmentParser = new OpenMRSBedAssignmentParser(ObjectMapperRepository.objectMapper);
         
         OpenERPRequest erpRequest = openMRSBedAssignmentParser.parse(encounterEventContent, productService, event.getId(), event.getFeedUri(), feedUrl);
-        logger.error("\n\n erpRequest =>"+erpRequest);
         if (event.getFeedUri() == null)
             erpRequest.addParameter(createParameter("is_failed_event", "1", "boolean"));
 

@@ -16,16 +16,15 @@
 
 package org.bahmni.feed.openerp;
 
-import com.fasterxml.jackson.databind.ObjectMapper;
+import java.io.IOException;
+import java.util.List;
 
-import org.apache.log4j.Logger;
 import org.bahmni.feed.openerp.domain.encounter.bedassignment.OpenMRSBedAssignment;
 import org.bahmni.openerp.web.request.OpenERPRequest;
 import org.bahmni.openerp.web.request.builder.Parameter;
 import org.bahmni.openerp.web.service.ProductService;
 
-import java.io.IOException;
-import java.util.List;
+import com.fasterxml.jackson.databind.ObjectMapper;
 
 public class OpenMRSBedAssignmentParser implements WebClientResponseParser {
     private ObjectMapper objectMapper;
@@ -34,16 +33,10 @@ public class OpenMRSBedAssignmentParser implements WebClientResponseParser {
         this.objectMapper = objectMapper;
     }
     
-    private static Logger logger = Logger.getLogger(OpenMRSBedAssignmentParser.class);
-	
 
     @Override
     public OpenERPRequest parse(String responseContent, ProductService productService, String eventId, String feedURIForLastReadEntry, String feedURI) throws IOException {
-    	logger.error("\n\n\n\n\nInside parse \n\n\n\n\n");
-    	logger.error("\n\n\n\n\nresponseContent=>"+responseContent);
     	OpenMRSBedAssignment openMRSBedAssignment = objectMapper.readValue(responseContent, OpenMRSBedAssignment.class);
-        
-    	logger.error("\n\n\n\nopenMRSBedAssignment=>"+openMRSBedAssignment);
         
         if (!openMRSBedAssignment.shouldERPConsumeEvent()) {
             return OpenERPRequest.DO_NOT_CONSUME;

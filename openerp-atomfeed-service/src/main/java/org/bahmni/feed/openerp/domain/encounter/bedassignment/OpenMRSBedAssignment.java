@@ -4,7 +4,6 @@ import java.io.IOException;
 import java.util.ArrayList;
 import java.util.List;
 
-import org.apache.log4j.Logger;
 import org.bahmni.feed.openerp.ObjectMapperRepository;
 import org.bahmni.feed.openerp.domain.OpenMRSPatient;
 import org.bahmni.feed.openerp.domain.encounter.OpenERPOrder;
@@ -35,11 +34,8 @@ public class OpenMRSBedAssignment extends OpenMRSEncounterEvent {
 		return bed != null && patient != null && encounter != null;
 	}
 	
-	private static Logger logger = Logger.getLogger(OpenMRSBedAssignment.class);
-	
 	public List<Parameter> getParameters(String eventId, ProductService productService, String feedURIForLastReadEntry, String feedURI)
 			throws IOException {
-		logger.error("\n\n\n\n\nInside getParameters \n\n\n\n\n");
 		validateUrls(feedURIForLastReadEntry, feedURI);
 
 		List<Parameter> parameters = new ArrayList<>();
@@ -59,11 +55,8 @@ public class OpenMRSBedAssignment extends OpenMRSEncounterEvent {
 
 	private String getOrderJson(ProductService productService, OpenMRSBed bed,
 			OpenMRSEncounter encounter) throws IOException {
-		logger.error("\n\n\n\n\nInside getOrderJson \n\n\n\n\n");
 		String productId = productService.findProductByName(bed.getBedType().getName());
 		
-		logger.error("\n\n\n\n productId:"+productId);
-
 		if (productId == null)
 			throw new OpenERPException("Product " + bed.getBedType().getName() + " not Found");
 
