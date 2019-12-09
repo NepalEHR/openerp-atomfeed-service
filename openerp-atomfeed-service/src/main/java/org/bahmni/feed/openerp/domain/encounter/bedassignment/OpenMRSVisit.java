@@ -24,6 +24,7 @@ public class OpenMRSVisit {
 	public class OpenMRSVisitType {
 		private String uuid;
 		private String name;
+		private String display;
 		private Boolean retired;
 		
 		
@@ -43,6 +44,10 @@ public class OpenMRSVisit {
 
 		public Boolean getRetired() {
 			return retired;
+		}
+
+		public String getDisplay() {
+			return display;
 		}
 
 	}
