@@ -1,40 +1,42 @@
 package org.bahmni.feed.openerp.worker;
 
-import org.apache.log4j.Logger;
+import java.io.IOException;
+import java.net.URI;
+
 import org.bahmni.feed.openerp.ObjectMapperRepository;
+import org.bahmni.feed.openerp.OpenMRSBedAssignmentParser;
 import org.bahmni.feed.openerp.client.OpenMRSWebClient;
 import org.bahmni.feed.openerp.domain.encounter.MapERPOrders;
 import org.bahmni.feed.openerp.domain.encounter.OpenMRSEncounter;
 import org.bahmni.feed.openerp.domain.visit.OpenMRSVisit;
+import org.bahmni.feed.openerp.utils.ApplicationContextProvider;
 import org.bahmni.openerp.web.client.OpenERPClient;
 import org.bahmni.openerp.web.request.OpenERPRequest;
 import org.bahmni.openerp.web.request.builder.Parameter;
+import org.bahmni.openerp.web.service.ProductService;
 import org.ict4h.atomfeed.client.domain.Event;
 import org.ict4h.atomfeed.client.service.EventWorker;
-
-import java.io.IOException;
-import java.net.URI;
 
 public class OpenERPSaleOrderEventWorker implements EventWorker {
     OpenERPClient openERPClient;
     private String feedUrl;
     private OpenMRSWebClient webClient;
     private String urlPrefix;
-
-
-    private static Logger logger = Logger.getLogger(OpenERPSaleOrderEventWorker.class);
+    private ProductService productService;
+    public static final String BED_EVENT_TITLE = "Bed-Assignment";
 
     public OpenERPSaleOrderEventWorker(String feedUrl, OpenERPClient openERPClient, OpenMRSWebClient webClient, String urlPrefix) {
         this.feedUrl = feedUrl;
         this.openERPClient = openERPClient;
         this.webClient = webClient;
         this.urlPrefix = urlPrefix;
+        this.productService = ApplicationContextProvider.getApplicationContext().getBean(ProductService.class);
     }
 
     @Override
     public void process(Event event) {
         try {
-            OpenERPRequest openERPRequest = mapRequest(event);
+        	OpenERPRequest openERPRequest = BED_EVENT_TITLE.equals(event.getTitle()) ? mapBedAssignmentRequest(event) : mapRequest(event);
             if (!openERPRequest.shouldERPConsumeEvent())
                 return;
 
@@ -46,6 +48,17 @@ public class OpenERPSaleOrderEventWorker implements EventWorker {
 
     @Override
     public void cleanUp(Event event) {
+    }
+    
+    private OpenERPRequest mapBedAssignmentRequest(Event event) throws IOException {
+        String encounterEventContent = webClient.get(URI.create(urlPrefix + event.getContent()));
+        OpenMRSBedAssignmentParser openMRSBedAssignmentParser = new OpenMRSBedAssignmentParser(ObjectMapperRepository.objectMapper);
+        
+        OpenERPRequest erpRequest = openMRSBedAssignmentParser.parse(encounterEventContent, productService, event.getId(), event.getFeedUri(), feedUrl);
+        if (event.getFeedUri() == null)
+            erpRequest.addParameter(createParameter("is_failed_event", "1", "boolean"));
+
+        return erpRequest;
     }
 
     private OpenERPRequest mapRequest(Event event) throws IOException {

@@ -10,6 +10,7 @@ public class OpenMRSVisit {
 
     private String uuid;
     private List<VisitAttributes> attributes = new ArrayList<>();
+    private OpenMRSVisitType visitType;
 
     public List<VisitAttributes> getAttributes() {
         return attributes;
@@ -18,4 +19,8 @@ public class OpenMRSVisit {
     public String getUuid() {
         return uuid;
     }
+
+	public OpenMRSVisitType getVisitType() {
+		return visitType;
+	}
 }

@@ -1,14 +1,13 @@
 package org.bahmni.feed.openerp.domain.encounter;
 
 
-import org.bahmni.feed.openerp.ObjectMapperRepository;
-import org.bahmni.feed.openerp.domain.visit.OpenMRSVisit;
-import org.bahmni.feed.openerp.domain.visit.VisitAttributes;
-import org.bahmni.openerp.web.request.builder.Parameter;
-
 import java.io.IOException;
 import java.util.ArrayList;
 import java.util.List;
+
+import org.bahmni.feed.openerp.ObjectMapperRepository;
+import org.bahmni.feed.openerp.domain.visit.OpenMRSVisit;
+import org.bahmni.openerp.web.request.builder.Parameter;
 
 public class MapERPOrders extends OpenMRSEncounterEvent {
 
@@ -96,14 +95,9 @@ public class MapERPOrders extends OpenMRSEncounterEvent {
 
         return ObjectMapperRepository.objectMapper.writeValueAsString(openERPOrders);
     }
-
+    
     private String getVisitType() {
-        for (VisitAttributes visitAttribute : openMRSVisit.getAttributes()) {
-            if (visitAttribute.getAttributeType().getDisplay().equals("Visit Status")) {
-                return visitAttribute.getValue();
-            }
-        }
-        return null;
+    	return openMRSVisit.getVisitType().getDisplay();
     }
 
 
