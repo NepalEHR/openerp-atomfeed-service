@@ -13,8 +13,6 @@ import org.bahmni.feed.openerp.domain.encounter.OpenMRSEncounterEvent;
 import org.bahmni.openerp.web.OpenERPException;
 import org.bahmni.openerp.web.request.builder.Parameter;
 import org.bahmni.openerp.web.service.ProductService;
-import org.joda.time.DateTime;
-import org.joda.time.Days;
 
 import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
 
@@ -26,11 +24,10 @@ public class OpenMRSBedAssignment extends OpenMRSEncounterEvent {
 	private String uuid;
 	private String startDatetime;
 	private String endDatetime;
-	
+
 	private final String BED_TYPE_ORDER = "Bed Order";
 	private final String ACTION_TYPE_NEW = "New";
-	private final String ACTION_TYPE_REVISE = "Revise";
-	
+
 	@Override
 	public String toString() {
 		return "OpenMRSBedAssignment [encounter=" + encounter + ", patient=" + patient + ", bed=" + bed + "]";
@@ -39,8 +36,9 @@ public class OpenMRSBedAssignment extends OpenMRSEncounterEvent {
 	public boolean shouldERPConsumeEvent() {
 		return bed != null && patient != null && encounter != null;
 	}
-	
-	public List<Parameter> getParameters(String eventId, ProductService productService, String feedURIForLastReadEntry, String feedURI)
+
+	public List<Parameter> getParameters(String eventId, ProductService productService, String feedURIForLastReadEntry,
+			String feedURI)
 			throws IOException {
 		validateUrls(feedURIForLastReadEntry, feedURI);
 
@@ -62,12 +60,12 @@ public class OpenMRSBedAssignment extends OpenMRSEncounterEvent {
 	private String getOrderJson(ProductService productService, OpenMRSBed bed,
 			OpenMRSEncounter encounter) throws IOException {
 		String productId = productService.findProductByName(bed.getBedType().getName());
-		
+
 		if (productId == null)
 			throw new OpenERPException("Product " + bed.getBedType().getName() + " not Found");
 
 		OpenERPOrder openERPOrder = new OpenERPOrder();
-//		openERPOrder.setVisitId(encounter.getVisit().getUuid());
+		//		openERPOrder.setVisitId(encounter.getVisit().getUuid());
 		//        openERPOrder.setVisitType(encounter.getVisit().getVisitType());
 		//        openERPOrder.setDescription(encounter.getVisit().getDescription());
 
@@ -77,28 +75,15 @@ public class OpenMRSBedAssignment extends OpenMRSEncounterEvent {
 		openERPOrder.setQuantityUnits("Day(s)");
 		openERPOrder.setEncounterId(encounter.getUuid());
 		openERPOrder.setVisitId(encounter.getVisit().getUuid());
-		
+
 		openERPOrder.setVisitType(encounter.getVisit().getVisitType().getName());
 		openERPOrder.setType(BED_TYPE_ORDER);
-		
-		DateTime startDateTimeParsed = DateTime.parse(startDatetime);
-		System.out.println("\n\n\n startDateTimeParsed-> \n\n\n"+startDateTimeParsed);
-		
-		long dayDiff = Days.daysBetween(startDateTimeParsed.toLocalDate(), DateTime.now().toLocalDate()).getDays();
-		
-		System.out.println("\n\n\n Day diff-> \n\n\n"+dayDiff);
-		
-		if (dayDiff < 1) {
-			openERPOrder.setAction(ACTION_TYPE_NEW);
-		} else {
-			openERPOrder.setAction(ACTION_TYPE_REVISE);
-//			openERPOrder.setPreviousOrderId(uuid);
-		}
+		openERPOrder.setAction(ACTION_TYPE_NEW);
 		
 		//Generating random uuid, as the bed-management uuid is always same for a resource
 		openERPOrder.setOrderId(UUID.randomUUID().toString());
-		
-        openERPOrder.setDispensed("false");
+
+		openERPOrder.setDispensed("false");
 
 		OpenERPOrders orders = new OpenERPOrders(bed.getId());
 		orders.getOpenERPOrders().add(openERPOrder);
@@ -129,5 +114,5 @@ public class OpenMRSBedAssignment extends OpenMRSEncounterEvent {
 	public String getEndDatetime() {
 		return endDatetime;
 	}
-	
+
 }
