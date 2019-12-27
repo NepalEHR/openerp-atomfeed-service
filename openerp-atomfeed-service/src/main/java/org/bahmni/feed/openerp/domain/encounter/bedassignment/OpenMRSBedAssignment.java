@@ -3,6 +3,7 @@ package org.bahmni.feed.openerp.domain.encounter.bedassignment;
 import java.io.IOException;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.UUID;
 
 import org.bahmni.feed.openerp.ObjectMapperRepository;
 import org.bahmni.feed.openerp.domain.OpenMRSPatient;
@@ -12,6 +13,8 @@ import org.bahmni.feed.openerp.domain.encounter.OpenMRSEncounterEvent;
 import org.bahmni.openerp.web.OpenERPException;
 import org.bahmni.openerp.web.request.builder.Parameter;
 import org.bahmni.openerp.web.service.ProductService;
+import org.joda.time.DateTime;
+import org.joda.time.Days;
 
 import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
 
@@ -21,9 +24,12 @@ public class OpenMRSBedAssignment extends OpenMRSEncounterEvent {
 	private OpenMRSPatient patient;
 	private OpenMRSBed bed;
 	private String uuid;
+	private String startDatetime;
+	private String endDatetime;
 	
 	private final String BED_TYPE_ORDER = "Bed Order";
 	private final String ACTION_TYPE_NEW = "New";
+	private final String ACTION_TYPE_REVISE = "Revise";
 	
 	@Override
 	public String toString() {
@@ -74,8 +80,25 @@ public class OpenMRSBedAssignment extends OpenMRSEncounterEvent {
 		
 		openERPOrder.setVisitType(encounter.getVisit().getVisitType().getName());
 		openERPOrder.setType(BED_TYPE_ORDER);
-		openERPOrder.setAction(ACTION_TYPE_NEW);
-		openERPOrder.setOrderId(uuid);
+		
+		DateTime startDateTimeParsed = DateTime.parse(startDatetime);
+		System.out.println("\n\n\n startDateTimeParsed-> \n\n\n"+startDateTimeParsed);
+		
+		long dayDiff = Days.daysBetween(startDateTimeParsed.toLocalDate(), DateTime.now().toLocalDate()).getDays();
+		
+		System.out.println("\n\n\n Day diff-> \n\n\n"+dayDiff);
+		
+		if (dayDiff < 1) {
+			openERPOrder.setAction(ACTION_TYPE_NEW);
+		} else {
+			openERPOrder.setAction(ACTION_TYPE_REVISE);
+//			openERPOrder.setPreviousOrderId(uuid);
+		}
+		
+		//Generating random uuid, as the bed-management uuid is always same for a resource
+		openERPOrder.setOrderId(UUID.randomUUID().toString());
+		
+        openERPOrder.setDispensed("false");
 
 		OpenERPOrders orders = new OpenERPOrders(bed.getId());
 		orders.getOpenERPOrders().add(openERPOrder);
@@ -97,6 +120,14 @@ public class OpenMRSBedAssignment extends OpenMRSEncounterEvent {
 
 	public String getUuid() {
 		return uuid;
+	}
+
+	public String getStartDatetime() {
+		return startDatetime;
+	}
+
+	public String getEndDatetime() {
+		return endDatetime;
 	}
 	
 }
