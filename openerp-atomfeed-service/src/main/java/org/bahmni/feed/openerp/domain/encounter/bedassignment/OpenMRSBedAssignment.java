@@ -1,74 +1,118 @@
 package org.bahmni.feed.openerp.domain.encounter.bedassignment;
 
+import java.io.IOException;
+import java.util.ArrayList;
+import java.util.List;
+import java.util.UUID;
+
 import org.bahmni.feed.openerp.ObjectMapperRepository;
 import org.bahmni.feed.openerp.domain.OpenMRSPatient;
 import org.bahmni.feed.openerp.domain.encounter.OpenERPOrder;
 import org.bahmni.feed.openerp.domain.encounter.OpenERPOrders;
-import org.bahmni.feed.openerp.domain.encounter.OpenMRSEncounter;
 import org.bahmni.feed.openerp.domain.encounter.OpenMRSEncounterEvent;
 import org.bahmni.openerp.web.OpenERPException;
 import org.bahmni.openerp.web.request.builder.Parameter;
 import org.bahmni.openerp.web.service.ProductService;
-import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
 
-import java.io.IOException;
-import java.util.ArrayList;
-import java.util.List;
+import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
 
 @JsonIgnoreProperties(ignoreUnknown = true)
 public class OpenMRSBedAssignment extends OpenMRSEncounterEvent {
-    private OpenMRSEncounter encounter;
-    private OpenMRSPatient patient;
-    private OpenMRSBed bed;
+	private OpenMRSEncounter encounter;
+	private OpenMRSPatient patient;
+	private OpenMRSBed bed;
+	private String uuid;
+	private String startDatetime;
+	private String endDatetime;
 
-    public boolean shouldERPConsumeEvent() {
-        return bed != null && patient != null && encounter != null;
-    }
+	private final String BED_TYPE_ORDER = "Bed Order";
+	private final String ACTION_TYPE_NEW = "New";
 
-    public List<Parameter> getParameters(String eventId, ProductService productService, String feedURIForLastReadEntry, String feedURI) throws IOException {
-        validateUrls(feedURIForLastReadEntry, feedURI);
+	@Override
+	public String toString() {
+		return "OpenMRSBedAssignment [encounter=" + encounter + ", patient=" + patient + ", bed=" + bed + "]";
+	}
 
-        List<Parameter> parameters = new ArrayList<>();
+	public boolean shouldERPConsumeEvent() {
+		return bed != null && patient != null && encounter != null;
+	}
 
-        String patientId = patient.getDisplay().split(" ")[0];
+	public List<Parameter> getParameters(String eventId, ProductService productService, String feedURIForLastReadEntry,
+			String feedURI)
+			throws IOException {
+		validateUrls(feedURIForLastReadEntry, feedURI);
 
-        parameters.add(createParameter("category", "create.sale.order", "string"));
-        parameters.add(createParameter("customer_id", patientId, "string"));
-        parameters.add(createParameter("feed_uri", feedURI, "string"));
-        parameters.add(createParameter("last_read_entry_id", eventId, "string"));
-        parameters.add(createParameter("feed_uri_for_last_read_entry", feedURIForLastReadEntry, "string"));
-        parameters.add(createParameter("orders", getOrderJson(productService, bed), "string"));
+		List<Parameter> parameters = new ArrayList<>();
 
-        return parameters;
-    }
+		String patientId = patient.getDisplay().split(" ")[0];
 
-    private String getOrderJson(ProductService productService, OpenMRSBed bed) throws IOException {
-        String productId = productService.findProductByName(bed.getBedType().getName());
-        if (productId == null)
-            throw new OpenERPException("Product " + bed.getBedType().getName() + " not Found");
+		parameters.add(createParameter("category", "create.sale.order", "string"));
+		parameters.add(createParameter("customer_id", patientId, "string"));
+		parameters.add(createParameter("encounter_id", encounter.getUuid(), "string"));
+		parameters.add(createParameter("feed_uri", feedURI, "string"));
+		parameters.add(createParameter("last_read_entry_id", eventId, "string"));
+		parameters.add(createParameter("feed_uri_for_last_read_entry", feedURIForLastReadEntry, "string"));
+		parameters.add(createParameter("orders", getOrderJson(productService, bed, encounter), "string"));
 
-        OpenERPOrder openERPOrder = new OpenERPOrder();
-        openERPOrder.setVisitId(encounter.getVisitUuid());
-//        openERPOrder.setVisitType(encounter.getVisit().getVisitType());
-//        openERPOrder.setDescription(encounter.getVisit().getDescription());
+		return parameters;
+	}
 
-        openERPOrder.setProductId(productId);
+	private String getOrderJson(ProductService productService, OpenMRSBed bed,
+			OpenMRSEncounter encounter) throws IOException {
+		String productId = productService.findProductByName(bed.getBedType().getName());
 
-        OpenERPOrders orders = new OpenERPOrders(bed.getId());
-        orders.getOpenERPOrders().add(openERPOrder);
+		if (productId == null)
+			throw new OpenERPException("Product " + bed.getBedType().getName() + " not Found");
 
-        return ObjectMapperRepository.objectMapper.writeValueAsString(orders);
-    }
+		OpenERPOrder openERPOrder = new OpenERPOrder();
+		//		openERPOrder.setVisitId(encounter.getVisit().getUuid());
+		//        openERPOrder.setVisitType(encounter.getVisit().getVisitType());
+		//        openERPOrder.setDescription(encounter.getVisit().getDescription());
 
-    public OpenMRSEncounter getEncounter() {
-        return encounter;
-    }
+		openERPOrder.setProductId(productId);
+		openERPOrder.setProductName(bed.getBedType().getName());
+		openERPOrder.setQuantity((double) 1);
+		openERPOrder.setQuantityUnits("Day(s)");
+		openERPOrder.setEncounterId(encounter.getUuid());
+		openERPOrder.setVisitId(encounter.getVisit().getUuid());
 
-    public OpenMRSPatient getPatient() {
-        return patient;
-    }
+		openERPOrder.setVisitType(encounter.getVisit().getVisitType().getName());
+		openERPOrder.setType(BED_TYPE_ORDER);
+		openERPOrder.setAction(ACTION_TYPE_NEW);
+		
+		//Generating random uuid, as the bed-management uuid is always same for a resource
+		openERPOrder.setOrderId(UUID.randomUUID().toString());
 
-    public OpenMRSBed getBed() {
-        return bed;
-    }
+		openERPOrder.setDispensed("false");
+
+		OpenERPOrders orders = new OpenERPOrders(bed.getId());
+		orders.getOpenERPOrders().add(openERPOrder);
+
+		return ObjectMapperRepository.objectMapper.writeValueAsString(orders);
+	}
+
+	public OpenMRSPatient getPatient() {
+		return patient;
+	}
+
+	public OpenMRSBed getBed() {
+		return bed;
+	}
+
+	public OpenMRSEncounter getEncounter() {
+		return encounter;
+	}
+
+	public String getUuid() {
+		return uuid;
+	}
+
+	public String getStartDatetime() {
+		return startDatetime;
+	}
+
+	public String getEndDatetime() {
+		return endDatetime;
+	}
+
 }
