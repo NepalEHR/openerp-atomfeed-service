@@ -1,6 +1,8 @@
 package org.bahmni.feed.openerp;
 
+import org.apache.log4j.Logger;
 import org.bahmni.feed.openerp.testhelper.FileConverter;
+import org.bahmni.feed.openerp.worker.OpenERPSaleOrderEventWorker;
 import org.bahmni.openerp.web.OpenERPException;
 import org.bahmni.openerp.web.request.OpenERPRequest;
 import org.bahmni.openerp.web.request.builder.Parameter;
@@ -15,12 +17,14 @@ import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
 
 public class OpenMRSBedAssignmentParserTest {
+	
     //TODO : Fix bed assignment code when required
     @Ignore
     @Test
     public void consumes_bed_assignment_encounter() throws Exception {
         String visitId = "5582a60a-5a13-4a41-81d0-678ff5bd0a7d";
         String bedId = "41";
+        String BED_TYPE_ORDER = "Bed Order";
 
         ProductService productService = mock(ProductService.class);
         String generalBedProductIdInERP = "12234324";
@@ -38,13 +42,15 @@ public class OpenMRSBedAssignmentParserTest {
         Assert.assertTrue(parameters.contains(new Parameter("feed_uri", "http://feedUrl", "string")));
         Assert.assertTrue(parameters.contains(new Parameter("last_read_entry_id", "eventId", "string")));
         Assert.assertTrue(parameters.contains(new Parameter("feed_uri_for_last_read_entry", "http://lastReadEntry", "string")));
-
+        
         String erpOrdersJson = getERPOrdersJson(parameters);
         Assert.assertNotNull(erpOrdersJson);
 
         Assert.assertTrue(erpOrdersJson.contains(generalBedProductIdInERP));
         Assert.assertTrue(erpOrdersJson.contains(visitId));
         Assert.assertTrue(erpOrdersJson.contains(bedId));
+        Assert.assertTrue(erpOrdersJson.contains(BED_TYPE_ORDER));
+        
     }
 
     @Test
