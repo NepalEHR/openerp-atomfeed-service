@@ -1,13 +1,14 @@
 package org.bahmni.feed.openerp;
 
+import java.util.HashMap;
+
+//import javax.annotation.PostConstruct;
+
 import org.apache.log4j.Logger;
 import org.bahmni.feed.openerp.job.Jobs;
 import org.bahmni.openerp.web.OpenERPProperties;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Component;
-
-import javax.annotation.PostConstruct;
-import java.util.HashMap;
 
 @Component
 public class OpenERPAtomFeedProperties implements OpenERPProperties {
@@ -179,7 +180,7 @@ public class OpenERPAtomFeedProperties implements OpenERPProperties {
     }
 
 
-    @PostConstruct
+    //@PostConstruct
     private void debug() {
         logger.debug("**************** DEBUG OpenERPAtomFeedProperties ************************ ");
         HashMap<String, String> properties = getInfo();

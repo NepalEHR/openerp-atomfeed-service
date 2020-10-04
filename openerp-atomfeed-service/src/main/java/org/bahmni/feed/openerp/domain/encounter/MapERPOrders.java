@@ -7,7 +7,9 @@ import java.util.List;
 
 import org.bahmni.feed.openerp.ObjectMapperRepository;
 import org.bahmni.feed.openerp.domain.visit.OpenMRSVisit;
+import org.bahmni.feed.openerp.domain.visit.VisitAttributes;
 import org.bahmni.openerp.web.request.builder.Parameter;
+
 
 public class MapERPOrders extends OpenMRSEncounterEvent {
 
@@ -23,7 +25,14 @@ public class MapERPOrders extends OpenMRSEncounterEvent {
     public List<Parameter> getParameters(String eventId, String feedURIForLastReadEntry, String feedURI) throws IOException {
         List<Parameter> parameters = new ArrayList<>();
         validateUrls(feedURIForLastReadEntry, feedURI);
-        parameters.add(createParameter("category", "create.sale.order", "string"));
+        if (openMRSEncounter.getEncounterType().compareToIgnoreCase("REG") == 0) {
+        	parameters.add(createParameter("category", "update.attributes", "string"));
+        }
+        else {
+        	parameters.add(createParameter("category", "create.sale.order", "string"));
+        }
+        parameters.add(createParameter("ref", openMRSEncounter.getPatientId(), "string"));
+        parameters.add(createParameter("uuid", openMRSEncounter.getPatientUuid(), "string"));
         parameters.add(createParameter("customer_id", openMRSEncounter.getPatientId(), "string"));
         parameters.add(createParameter("encounter_id", openMRSEncounter.getEncounterUuid(), "string"));
         parameters.add(createParameter("feed_uri", feedURI, "string"));
@@ -31,6 +40,7 @@ public class MapERPOrders extends OpenMRSEncounterEvent {
         parameters.add(createParameter("feed_uri_for_last_read_entry", feedURIForLastReadEntry, "string"));
         parameters.add(createParameter("orders", mapOpenERPOrders(), "string"));
         parameters.add(createParameter("locationName", openMRSEncounter.getLocationName(), "string"));
+        parameters.add(createParameter("attributes", openMRSEncounter.getgroupMembersJSON(), "string"));
         return parameters;
     }
 
@@ -93,11 +103,44 @@ public class MapERPOrders extends OpenMRSEncounterEvent {
             openERPOrders.add(openERPOrder);
         }
 
+        if (openMRSEncounter.getEncounterType().compareToIgnoreCase("REG") == 0){
+        	//Add registration fee as order
+            for (OpenMRSObservation observation : observations) {
+            	List<OpenMRSObservationGroupMember> groupMembers = observation.getgroupMembers();
+            	for (OpenMRSObservationGroupMember groupMember :groupMembers  ) {
+            		if (groupMember.getconcept().getconceptClass().compareToIgnoreCase("RegFee") == 0 && 
+            		   (groupMember.getvalueAsString().compareToIgnoreCase("Yes") == 0)) {
+	                    OpenERPOrder openERPOrder = new OpenERPOrder();
+	                    openERPOrder.setVisitId(openMRSEncounter.getVisitUuid());
+	                    openERPOrder.setOrderId(openMRSEncounter.getVisitUuid());
+	                    openERPOrder.setDispensed("false");
+	                    openERPOrder.setPreviousOrderId("");
+	                    openERPOrder.setEncounterId(openMRSEncounter.getEncounterUuid());
+	                    openERPOrder.setProductId(groupMember.getconceptUuid());
+	                    openERPOrder.setProductName(groupMember.getconceptNameToDisplay());
+	                    openERPOrder.setAction("NEW");
+	                    openERPOrder.setQuantity((double) 1);
+	                    openERPOrder.setQuantityUnits("Unit(s)");
+	                    openERPOrder.setVoided(false);
+	                    openERPOrder.setType("Registration Fee");
+	                    openERPOrder.setVisitType(getVisitType());
+	                    openERPOrder.setProviderName(providerName);
+	                    openERPOrders.add(openERPOrder);
+	                    break;
+            		}
+            	}
+            }
+        }
         return ObjectMapperRepository.objectMapper.writeValueAsString(openERPOrders);
     }
     
     private String getVisitType() {
-    	return openMRSVisit.getVisitType().getDisplay();
+        for (VisitAttributes visitAttribute : openMRSVisit.getAttributes()) {
+            if (visitAttribute.getAttributeType().getDisplay().equals("Visit Status")) {
+                return visitAttribute.getValue();
+            }
+        }
+        return null;
     }
 
 

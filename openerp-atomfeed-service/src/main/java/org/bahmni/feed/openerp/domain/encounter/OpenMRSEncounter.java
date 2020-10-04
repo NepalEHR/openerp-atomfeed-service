@@ -18,8 +18,14 @@ package org.bahmni.feed.openerp.domain.encounter;
 
 import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
 
+import java.io.IOException;
 import java.util.ArrayList;
+import java.util.HashMap;
 import java.util.List;
+
+import org.apache.log4j.Logger;
+import org.bahmni.feed.openerp.ObjectMapperRepository;
+import org.bahmni.feed.openerp.worker.OpenElisSaleOrderEventWorker;
 
 @JsonIgnoreProperties(ignoreUnknown = true)
 public class OpenMRSEncounter {
@@ -33,13 +39,18 @@ public class OpenMRSEncounter {
     private String visitUuid;
     private String visitTypeUuid;
     private String locationName;
+    private String encounterType;
 
     public boolean shouldERPConsumeEvent() {
-        return hasDrugOrders() || hasOrders();
+        return hasDrugOrders() || hasOrders() || hasObservations();
     }
 
     public String getEncounterUuid() {
         return encounterUuid;
+    }
+
+    public String getEncounterType() {
+        return encounterType;
     }
 
     private boolean hasDrugOrders() {
@@ -50,6 +61,10 @@ public class OpenMRSEncounter {
         return getOrders().size() > 0;
     }
 
+    private boolean hasObservations() {
+    	return getObservations().size() > 0;
+    }
+    
     public String getPatientUuid() {
         return patientUuid;
     }
@@ -87,4 +102,26 @@ public class OpenMRSEncounter {
     public List<Provider> getProviders() {
         return providers;
     }
+    
+    public String getgroupMembersJSON() {
+    	
+        HashMap<String, Object> groupMembers = new HashMap<>();
+    	for (OpenMRSObservation openMRSObservation: this.observations)
+    	{
+    		for (OpenMRSObservationGroupMember groupMember: openMRSObservation.getgroupMembers())
+    		{
+    			groupMembers.put(groupMember.getconceptNameToDisplay(), groupMember.getvalueAsString());
+    		}
+    	}
+    	String groupMembersJSON = "";
+    	try {
+    		
+        	groupMembersJSON = ObjectMapperRepository.objectMapper.writeValueAsString(groupMembers);
+    	}  catch (IOException e) {
+            Logger logger = Logger.getLogger(OpenMRSEncounter.class);
+            logger.error("Unable to convert groupMembers hash to json string. " + e.getMessage());
+        }
+    	return groupMembersJSON;
+    }
+
 }
